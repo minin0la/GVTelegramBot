@@ -1,24 +1,3 @@
-# def build_menu(buttons,
-#                n_cols,
-#                header_buttons=None,
-#                footer_buttons=None):
-#     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-#     if header_buttons:
-#         menu.insert(0, header_buttons)
-#     if footer_buttons:
-#         menu.append(footer_buttons)
-#     return menu
-
-# def start(bot, update):
-#     some_strings = ["col1", "col2", "row2"]
-#     button_list = [KeyboardButton(s) for s in some_strings]
-#     reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True)
-#     update.message.reply_text("Choose Movie", reply_markup=reply_markup)
-
-# start_handler = CommandHandler('start', start)
-# dispatcher.add_handler(start_handler)
-# updater.start_polling()
-
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
                           ConversationHandler)
@@ -31,7 +10,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-CINEMA, MOVIE, DATE = range(3)
+CINEMA, MOVIE, DATE, CHECKSPECIFIC = range(4)
 
 def build_menu(buttons,
                n_cols,
@@ -47,7 +26,7 @@ def movie(bot, update):
     # reply_keyboard = [['Boy', 'Girl', 'Other']]
     cinemaname = Getmovie.cinemalist()
     button_list = [KeyboardButton(s) for s in cinemaname]
-    reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True, selective=True)
     update.message.reply_text(
         'Which cinema?',
         reply_markup=reply_markup)
@@ -64,7 +43,7 @@ def cinema(bot, update, user_data):
     cinemaname = Getmovie.showingincinemalist(user_data['cinemaid'])
     if str(cinemaname) != '[]':
         button_list = [KeyboardButton(s) for s in cinemaname]
-        reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True)
+        reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True, selective=True)
         update.message.reply_text(
             'Which movie?',
             reply_markup=reply_markup)
@@ -84,7 +63,7 @@ def moviedetail(bot, update, user_data):
                               reply_markup=ReplyKeyboardRemove())
     datelist = Getmovie.showingincinemadatelist(user_data['cinemaid'], user_data['movieid'])
     button_list = [KeyboardButton(s) for s in datelist]
-    reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True, selective=True)
     update.message.reply_text(
         'Which day?',
         reply_markup=reply_markup)
@@ -99,10 +78,28 @@ def date(bot, update, user_data):
                               reply_markup=ReplyKeyboardRemove())
     user_data['date'] = Getmovie.getunixdate(text)
     user_data['datetext'] = text
-    sessions = Getmovie.getsessioninfo(cinemaID=user_data['cinemaid'], filmCode=user_data['movieid'], date=user_data['date'])
-    update.message.reply_text('Here are the details\nCinema: {}\nMovie: {}\nDate: {}\n{}\n'.format(user_data['cinemaname'], user_data['moviename'], user_data['datetext'], "\n".join(sessions)))
+    sessions, keyboard, thedetails = Getmovie.getsessioninfo(cinemaId=user_data['cinemaid'], filmCode=user_data['movieid'], showDate=user_data['date'])
+    user_data['thedetails'] = thedetails
+    button_list = [KeyboardButton(s) for s in keyboard]
+    reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True, selective=True)
+    update.message.reply_text('Here are the details\nCinema: {}\nMovie: {}\nDate: {}\n\n{}'.format(user_data['cinemaname'], user_data['moviename'], user_data['datetext'], "\n".join(sessions)), reply_markup=reply_markup)
+    return CHECKSPECIFIC
 
+def checkspecific(bot, update, user_data):
+    user = update.message.from_user
+    text = update.message.text
+    # user_data['movieid'] = Getmovie.getshowingincinemaid(cinemaId=user_data['cinemaid'], filmTitle=text.lower())
+    update.message.reply_text('At {}? OK!'.format(text),
+                              reply_markup=ReplyKeyboardRemove())
+    sessions, keyboard, thedetails = Getmovie.getsessioninfo(cinemaId=user_data['cinemaid'], filmCode=user_data['movieid'], showDate=user_data['date'])
+    user_data['thedetails'] = thedetails
+    for i in thedetails:
+        if i['time12'] == text:
+            user_data['time24'] = i['time24']
+            user_data['hallNumber'] = i['hallNumber']
+    update.message.reply_text('Here are the details\n{}'.format(Getmovie.checkseatsdetail(cinemaId=user_data['cinemaid'],filmCode=user_data['movieid'],showDate=user_data['date'],showTime=user_data['time24'],hallNumber=user_data['hallNumber'])), reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+    
 
 def cancel(bot, update):
     user = update.message.from_user

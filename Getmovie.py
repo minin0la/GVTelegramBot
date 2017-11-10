@@ -33,7 +33,61 @@ def checkseats(cinemaId, filmCode, showDate, showTime, hallNumber):
                 blockedseat = blockedseat + 1
     haveseatpercent = float(bookedseat/seatcount)*(100.0)
     haveseatpercent = "{0:.2f}%".format(haveseatpercent)
-    return haveseatpercent
+    return haveseatpercent, bookedseat, seatcount
+
+def checkseatsdetail(cinemaId, filmCode, showDate, showTime, hallNumber):
+    url = "https://www.gv.com.sg/.gv-api/seatplan"
+    theshowDate = datetime.datetime.fromtimestamp(showDate / 1000.0)
+    theshowDate = time.strftime("%d-%m-%Y", time.gmtime(int(theshowDate.timestamp())))
+    payload = "{" + """"cinemaId":"{}","filmCode":"{}","showDate":"{}","showTime":"{}","hallNumber":"{}\"""".format(cinemaId, filmCode, theshowDate, showTime, hallNumber) + "}"
+    # payload = "{\"cinemaId\":\"04\",\"filmCode\":\"6111\",\"showDate\":\"06-11-2017\",\"showTime\":\"1915\",\"hallNumber\":\"5\"}"
+    # print(payload)
+    headers = {
+        'accept': "application/json, text/plain, */*",
+        'x_developer': "ENOVAX",
+        'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
+        'content-type': "application/json; charset=UTF-8",
+        }
+
+    seatcolnum = 0
+    seatrownum = 0
+    response = requests.request("POST", url, data=payload, headers=headers)
+    result = json.loads(response.text.encode('ascii', 'ignore'))
+    for seatnumbers in result['data']:
+        for seats in seatnumbers:
+            if seats['colNumber'] > seatcolnum:
+                seatcolnum = int(seats['colNumber'])
+            if seats['rowNumber'] > seatrownum:
+                seatrownum = int(seats['rowNumber'])
+    theseatlist = dict()
+    theseatlist['SCREEN'] = ['         Screen']
+    for i in range(1, seatrownum):
+        if i in theseatlist:
+            theseatlist[str(i)].append('')
+        else:
+            # create a new array in this slot
+            theseatlist[str(i)] = []
+    for seatnumbers in result['data']:
+        for seats in seatnumbers:
+            if str(seats['rowNumber']) in theseatlist:
+                if (seats['rowId'] is not None) and (seats['status'] == "L"):
+                    theseatlist[str(seats['rowNumber'])].append('Y')
+                elif (seats['rowId'] is not None) and (seats['status'] == "B"):
+                    theseatlist[str(seats['rowNumber'])].append('X')
+                elif (seats['rowId'] is not None) and (seats['status'] == "T"):
+                    theseatlist[str(seats['rowNumber'])].append('B')
+                else:
+                    theseatlist[str(seats['rowNumber'])].append(' ')
+    theresult = ''
+    for k, v in theseatlist.items():
+        if k == 'SCREEN':
+            theresult = theresult + ''.join(v) + '\n'
+        else:
+            if int(k) < 10:
+                theresult = theresult + k + '   ' + ''.join(v) + '\n'
+            else:
+                theresult = theresult + k + '  ' + ''.join(v) + '\n'
+    return theresult
 
 def cinemalist():
     cinemalist = []
@@ -176,8 +230,10 @@ def getunixdate(date):
     date = (time.mktime(date.timetuple()))*1000
     return int(date)
 
-def getsessioninfo(cinemaID, filmCode, date):
+def getsessioninfo(cinemaId, filmCode, showDate):
     sessions = []
+    keyboard = []
+    thedetails = []
     url = "https://www.gv.com.sg/.gv-api/sessionforfilm"
     payload = "{" + """"filmCode":"{}\"""".format(filmCode) + "}"
     headers = {
@@ -188,16 +244,30 @@ def getsessioninfo(cinemaID, filmCode, date):
         }
     response = requests.request("POST", url, data=payload, headers=headers)
     result = json.loads(response.text.encode('ascii', 'ignore'))
+    midnightdate = datetime.datetime.fromtimestamp(showDate / 1000.0) - datetime.timedelta(hours=24)
+    midnightdate = int((time.mktime(midnightdate.timetuple()))*1000)
     for locations in result['data']['locations']:
-        if locations['id'] == cinemaID:
+        if locations['id'] == cinemaId:
             for dates in locations['dates']:
-                if dates['date'] == date:
+                if (dates['date'] == midnightdate) or (dates['date'] == showDate):
                     for times in dates['times']:
-                        showDate = datetime.datetime.fromtimestamp(times['showDate'] / 1000.0) + datetime.timedelta(hours=8)
-                        showDate = time.strftime("%d-%m-%Y", time.gmtime(int(showDate.timestamp())))
-                        seatpercent = checkseats(cinemaId=cinemaID, filmCode=filmCode, showDate=showDate, showTime=times['time24'], hallNumber=times['hallNumber'])
-                        sessions.append("Time: {} \nHall: {} ".format(times['time12'], times['hallNumber']) + "Boooked: {}".format(seatpercent))
-    return sessions
+                        if times['showDate'] == showDate:
+                            theshowDate = datetime.datetime.fromtimestamp(times['showDate'] / 1000.0) + datetime.timedelta(hours=8)
+                            theshowDate = time.strftime("%d-%m-%Y", time.gmtime(int(theshowDate.timestamp())))
+                            seatpercent, bookedseat, seatcount = checkseats(cinemaId=cinemaId, filmCode=filmCode, showDate=theshowDate, showTime=times['time24'], hallNumber=times['hallNumber'])
+                            sessions.append("Time: {} \nHall: {} ".format(times['time12'], times['hallNumber']) + "\nBooked: {} ".format(seatpercent) + "({}/{})\n".format(bookedseat, seatcount))
+                            keyboard.append("Time: {} ".format(times['time12']))
+                            thedetails.append({'time12':times['time12'], 'time24':times['time24'], 'hallNumber': times['hallNumber']})
+                # elif dates['date'] == showDate:
+                #     for times in dates['times']:
+                #         if times['showDate'] == showDate:
+                #             showDate = datetime.datetime.fromtimestamp(times['showDate'] / 1000.0) + datetime.timedelta(hours=8)
+                #             showDate = time.strftime("%d-%m-%Y", time.gmtime(int(showDate.timestamp())))
+                #             seatpercent, bookedseat, seatcount = checkseats(cinemaId=cinemaId, filmCode=filmCode, showDate=showDate, showTime=times['time24'], hallNumber=times['hallNumber'])
+                #             sessions.append("Time: {} \nHall: {} ".format(times['time12'], times['hallNumber']) + "\nBooked: {} ".format(seatpercent) + "({}/{})\n".format(bookedseat, seatcount))
+                #             keyboard.append("Time: {} ".format(times['time24']))
+                #             thedetails.append({'time24':times['time24'], 'hallNumber': times['hallNumber']})
+    return sessions, keyboard, thedetails
 
 # movielist()
 # cinemalist()
