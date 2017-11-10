@@ -37,7 +37,7 @@ def checkseats(cinemaId, filmCode, showDate, showTime, hallNumber):
 
 def checkseatsdetail(cinemaId, filmCode, showDate, showTime, hallNumber):
     url = "https://www.gv.com.sg/.gv-api/seatplan"
-    theshowDate = datetime.datetime.fromtimestamp(showDate / 1000.0)
+    theshowDate = datetime.datetime.fromtimestamp(int(showDate) / 1000.0)
     theshowDate = time.strftime("%d-%m-%Y", time.gmtime(int(theshowDate.timestamp())))
     payload = "{" + """"cinemaId":"{}","filmCode":"{}","showDate":"{}","showTime":"{}","hallNumber":"{}\"""".format(cinemaId, filmCode, theshowDate, showTime, hallNumber) + "}"
     # payload = "{\"cinemaId\":\"04\",\"filmCode\":\"6111\",\"showDate\":\"06-11-2017\",\"showTime\":\"1915\",\"hallNumber\":\"5\"}"
@@ -256,7 +256,7 @@ def getsessioninfo(cinemaId, filmCode, showDate):
                             theshowDate = time.strftime("%d-%m-%Y", time.gmtime(int(theshowDate.timestamp())))
                             seatpercent, bookedseat, seatcount = checkseats(cinemaId=cinemaId, filmCode=filmCode, showDate=theshowDate, showTime=times['time24'], hallNumber=times['hallNumber'])
                             sessions.append("Time: {} \nHall: {} ".format(times['time12'], times['hallNumber']) + "\nBooked: {} ".format(seatpercent) + "({}/{})\n".format(bookedseat, seatcount))
-                            keyboard.append("Time: {} ".format(times['time12']))
+                            keyboard.append("{}".format(times['time12']))
                             thedetails.append({'time12':times['time12'], 'time24':times['time24'], 'hallNumber': times['hallNumber']})
                 # elif dates['date'] == showDate:
                 #     for times in dates['times']:

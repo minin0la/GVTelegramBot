@@ -129,7 +129,8 @@ def main():
         states={
             CINEMA: [MessageHandler(Filters.text, cinema, pass_user_data=True)],
             MOVIE: [MessageHandler(Filters.text, moviedetail, pass_user_data=True)],
-            DATE: [MessageHandler(Filters.text, date, pass_user_data=True)]
+            DATE: [MessageHandler(Filters.text, date, pass_user_data=True)],
+            CHECKSPECIFIC: [MessageHandler(Filters.text, checkspecific, pass_user_data=True)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
