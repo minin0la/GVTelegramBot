@@ -6,8 +6,6 @@ import datetime
 def checkseats(cinemaId, filmCode, showDate, showTime, hallNumber):
     url = "https://www.gv.com.sg/.gv-api/seatplan"
     payload = "{" + """"cinemaId":"{}","filmCode":"{}","showDate":"{}","showTime":"{}","hallNumber":"{}\"""".format(cinemaId, filmCode, showDate, showTime, hallNumber) + "}"
-    # payload = "{\"cinemaId\":\"04\",\"filmCode\":\"6111\",\"showDate\":\"06-11-2017\",\"showTime\":\"1915\",\"hallNumber\":\"5\"}"
-    # print(payload)
     headers = {
         'accept': "application/json, text/plain, */*",
         'x_developer': "ENOVAX",
@@ -40,8 +38,6 @@ def checkseatsdetail(cinemaId, filmCode, showDate, showTime, hallNumber):
     theshowDate = datetime.datetime.fromtimestamp(int(showDate) / 1000.0)
     theshowDate = time.strftime("%d-%m-%Y", time.gmtime(int(theshowDate.timestamp())))
     payload = "{" + """"cinemaId":"{}","filmCode":"{}","showDate":"{}","showTime":"{}","hallNumber":"{}\"""".format(cinemaId, filmCode, theshowDate, showTime, hallNumber) + "}"
-    # payload = "{\"cinemaId\":\"04\",\"filmCode\":\"6111\",\"showDate\":\"06-11-2017\",\"showTime\":\"1915\",\"hallNumber\":\"5\"}"
-    # print(payload)
     headers = {
         'accept': "application/json, text/plain, */*",
         'x_developer': "ENOVAX",
@@ -243,9 +239,7 @@ def getsessioninfo(cinemaId, filmCode, showDate):
         'content-type': "application/json; charset=UTF-8",
         }
     response = requests.request("POST", url, data=payload, headers=headers)
-    print(response)
     result = json.loads(response.text.encode('ascii', 'ignore'))
-    print(result)
     midnightdate = datetime.datetime.fromtimestamp(showDate / 1000.0) - datetime.timedelta(hours=24)
     midnightdate = int((time.mktime(midnightdate.timetuple()))*1000)
     for locations in result['data']['locations']:
@@ -270,62 +264,3 @@ def getsessioninfo(cinemaId, filmCode, showDate):
                 #             keyboard.append("Time: {} ".format(times['time24']))
                 #             thedetails.append({'time24':times['time24'], 'hallNumber': times['hallNumber']})
     return sessions, keyboard, thedetails
-
-# movielist()
-# cinemalist()
-# cinemaid = input("Which cinema (ID): ")
-# filmid = input("Which movie (ID): ")
-# date = input("Which day? (DD-MM-YYYY): ")
-# date = datetime.datetime.strptime(date, "%d-%m-%Y") + datetime.timedelta(hours=16)
-# date = (time.mktime(date.timetuple()))*1000
-# timing = checktiming(cinemaId=cinemaid, filmCode=filmid, date=int(date))
-# print("Show details for {} at {}".format(showmoviename(filmid), showcinemaname(cinemaid)))
-# result = ''
-# for time in timing:
-#     result = result + time['showDate'] + "\n"
-#     result = result + time['time12'] + "\n"
-#     seatpercent = checkseats(cinemaId=cinemaid, filmCode=filmid, showDate=time['showDate'], showTime=time['time24'], hallNumber=time['hall'])
-#     result = result + "Booked: {}".format(seatpercent) + "\n"
-# print(result)
-# url = "https://www.gv.com.sg/.gv-api/nowshowing"
-
-# headers = {
-#     'accept': "application/json, text/plain, */*",
-#     'x_developer': "ENOVAX",
-#     'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
-#     }
-
-# print("Getting now showing movie in Golden Village")
-# response = requests.request("POST", url, headers=headers)
-# result = json.loads(response.text.encode('ascii', 'ignore'))
-# for moviename in result['data']:
-#     print(moviename['filmTitle'] + " " + moviename['filmCd'])
-
-# FlimID = input("Which flim?: ")
-# url = 'https://www.gv.com.sg/.gv-api/sessionforfilm'
-# payload = "{" + """"filmCode": """ + "{}".format(FlimID) + "}"
-
-# headers = {
-#     'accept': "application/json, text/plain, */*",
-#     'x_developer': "ENOVAX",
-#     'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
-#     'content-type': "application/json; charset=UTF-8",
-#     }
-# response = requests.request("POST", url, data=payload, headers=headers)
-# result = json.loads(response.text.encode('ascii', 'ignore'))
-# filmcode = result['data']['filmCd']
-# for location_name in result['data']['locations']:
-#     if location_name['name'] == "GV Jurong Point":
-#         print("Showing Result for {}".format(location_name['name']))
-#         print("Movie Name: {}".format(result['data']['filmTitle']))
-#         cinemaId = location_name['id']
-#         for the_date in location_name['dates']:
-#             print(time.strftime("\nDate: %a %d %b %Y", time.gmtime(int(the_date['date']) / 1000.0)))
-#             showDate = time.strftime("%d-%m-%Y", time.gmtime(int(the_date['date']) / 1000.0))
-#             for the_time in the_date['times']:
-#                 try:
-#                     seatpercent = checkseats(cinemaId=cinemaId, filmCode=filmcode, showDate=showDate, showTime=the_time['time24'], hallNumber=the_time['hallNumber'])
-#                     print("Time: {} ".format(the_time['time12']) + "Sold: {} ".format(seatpercent) + "Hall Number: {}".format(the_time['hallNumber']))
-#                 except:
-#                     pass
-#         print(location_name['dates'])
