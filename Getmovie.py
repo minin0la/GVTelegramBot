@@ -243,6 +243,7 @@ def getsessioninfo(cinemaId, filmCode, showDate):
         'content-type': "application/json; charset=UTF-8",
         }
     response = requests.request("POST", url, data=payload, headers=headers)
+    print(response)
     result = json.loads(response.text.encode('ascii', 'ignore'))
     midnightdate = datetime.datetime.fromtimestamp(showDate / 1000.0) - datetime.timedelta(hours=24)
     midnightdate = int((time.mktime(midnightdate.timetuple()))*1000)
