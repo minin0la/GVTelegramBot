@@ -245,6 +245,7 @@ def getsessioninfo(cinemaId, filmCode, showDate):
     response = requests.request("POST", url, data=payload, headers=headers)
     print(response)
     result = json.loads(response.text.encode('ascii', 'ignore'))
+    print(result)
     midnightdate = datetime.datetime.fromtimestamp(showDate / 1000.0) - datetime.timedelta(hours=24)
     midnightdate = int((time.mktime(midnightdate.timetuple()))*1000)
     for locations in result['data']['locations']:
