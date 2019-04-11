@@ -79,7 +79,9 @@ def date(bot, update, user_data):
     user_data['date'] = Getmovie.getunixdate(text)
     user_data['datetext'] = text
     sessions, keyboard, thedetails = Getmovie.getsessioninfo(cinemaId=user_data['cinemaid'], filmCode=user_data['movieid'], showDate=user_data['date'])
-    print(Getmovie.getsessioninfo(cinemaId=user_data['cinemaid'], filmCode=user_data['movieid'], showDate=user_data['date']))
+    print(user_data['cinemaid'])
+    print(user_data['movieid'])
+    print(user_data['date'])
     user_data['thedetails'] = thedetails
     button_list = [KeyboardButton(s) for s in keyboard]
     reply_markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=1), one_time_keyboard=True, selective=True)
